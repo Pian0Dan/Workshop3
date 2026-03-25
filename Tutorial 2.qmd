@@ -1,0 +1,111 @@
+---
+title: "Tutorial Activities"
+format:
+    pdf: 
+        theme: cerulean
+    html: 
+        theme: cerulean
+author: Daniel Loza
+---
+
+```{r}
+#| message: false
+#| warning: false
+#| echo: false
+
+library(rmarkdown)
+library(knitr)
+library(tidyverse)
+library(readr)
+library(kableExtra)
+library(ggplot2)
+library(lubridate)
+```
+
+# Introduction
+
+In this tutorial we are looking at the Avian Influenza cases detected globally since 1997.
+
+[US CDC](https://www.cdc.gov/bird-flu/php/avian-flu-summary/chart-epi-curve-ah5n1.html)
+
+# Reading Avian Influenza Data
+
+```{r}
+#| echo: true
+#| warning: false
+#| message: false
+
+dat <- read_csv("data/avian_influenza_numbers.csv")
+```
+
+```{r}
+head(dat)
+head(dat, 10)
+```
+
+```{r}
+# Snapshot of the data
+glimpse(dat)
+```
+
+```{r}
+# Overview of the data structure (specifically showing variable class)
+str(dat)
+```
+The data has `r nrow(dat)` rows and `r ncol(dat)` columns (variables).
+
+### Why is it important to know the dimension of your dataset?
+
+If you don't know the dimensions of your data, you can't know how many data points to expect when running functions. You also can't know if your data is large enough to be robust. It is also necessary for matrix multiplication, if that comes up. But also, you just need it for general context.
+
+### What are the variable names in the dataset?
+
+```{r}
+#| echo: false
+
+names(dat)
+```
+
+- Month: measures the month and year at which the count of infections is recorded (type string)
+- Australia: measures the number of infections in Australia for the given month and year
+
+# Data Wrangling
+```{r}
+# Selecting variables
+data_cleaned <- dat %>%
+    select(Month, Australia, Egypt, `United States`) %>%
+    mutate(Month = mdy(Month)) %>%
+    filter(!is.na(Month))
+
+dim(data_cleaned)
+```
+
+We lost `r 370 - 338` entries through filtering.
+
+```{r}
+data_cleaned %>%
+    summarise(Australia = sum(Australia),
+    Egypt = sum(Egypt),
+    US = sum(`United States`)) %>%
+        kable() %>%
+        kable_styling()
+```
+
+```{r}
+data_cleaned %>%
+    ggplot(aes(x = Egypt)) +
+    geom_histogram(binwidth = 5)
+
+data_cleaned %>%
+    pivot_longer(-Month, names_to = "Country", values_to = "Count") %>%
+    ggplot(aes(x = Count, fill = Country)) +
+    geom_histogram(binwidth = 5, position = "dodge") + 
+    facet_wrap(~Country)
+
+data_cleaned %>%
+    pivot_longer(-Month, names_to = "Country", values_to = "Count") %>%
+    ggplot(aes(x = Month, y = Count, fill = Country)) +
+    geom_col(position = "dodge") + 
+    facet_wrap(~Country)
+
+```
